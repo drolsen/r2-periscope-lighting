@@ -17,7 +17,7 @@ You will need the following:
 - 1x - R-Series Periscope housing (https://www.thingiverse.com/thing:3580234)
 - 1x - Computer to upload code / test
 - 3x - Standard 5mm red leds (for back of housing)
-- 6x - Square 5mm x 7mm leds (for front diffuse pattern)
+- 6x - Square 2mm x 7mm leds (for front diffuse pattern https://www.mouser.com/ProductDetail/749-R7HD)
 
 ## Features
 - x32 5v WS2812B-2020 RGB LEDs 
