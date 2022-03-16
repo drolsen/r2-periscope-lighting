@@ -1,3 +1,5 @@
+<img src="/assets/logo.svg" width="300" />
+
 # Open Source R2D2 Periscope Lighting PCB(s)
 
 This open source project is a place to house all information around:
