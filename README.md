@@ -11,18 +11,19 @@ This project assumes you have and are prepared to do entry level soldering to co
 
 You will need the following:
 
+- 23x - standard pin headers
+- 5x - standard 90deg pin headers
+- 6x - Square 2mm x 7mm leds (for front https://www.mouser.com/ProductDetail/749-R7HD)
+- 3x - Standard 5mm flat top red leds (for back https://lighthouseleds.com/5mm-diffused-flat-top-led-red-ultra-bright.html)
 - 1x - Arduino pro-mini (with serial uploader or a second Arduino Mega/Uno)
-- 10x - 90 deg pin headers
-- 15x - standard pin headers
 - 1x - R-Series Periscope housing (https://www.thingiverse.com/thing:3580234)
-- 1x - Computer to upload code / test
-- 3x - Standard 5mm red leds (for back of housing)
-- 6x - Square 2mm x 7mm leds (for front diffuse pattern https://www.mouser.com/ProductDetail/749-R7HD)
 
 ## Features
-- x32 5v WS2812B-2020 RGB LEDs 
-- RX/TX Communication
-- Dedicated digital pins to each PCB side.
+- R2 Uppity Spinner 3 pin communication
+- Optional RX/TX communication
+- 26x 5v WS2812B-2020 RGB LEDs
+- 8 different lighting modes
+- Reverse polarity protection
 
 ## PCB Ordering
 
