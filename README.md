@@ -3,11 +3,22 @@
 # Open Source R2D2 Periscope Lighting PCB(s)
 
 This open source project is a place to house all information around:
-- Purchasing PCBs
-- Constructing PCBs
+- Purchasing R2D2 periscope lighting PCBs
+- Constructing the PCBs
 - Uploading Code / Testing PCBs
 
-This project assumes you have and are prepared to do entry level soldering to complete your periscope lighiting. 
+While there are different assembily options based on cost, all assembily options assumes you are prepared to do entry level soldering to complete your periscope lighiting.
+
+## Assembily options
+
+Before you get started on purchasing a set of PCBs, you must first decide if you or the manufacturer will be surface mounting the PCBs. Its recommended you review both assembily options first before making any purchase.
+
+- Minimal amount of soldering / Most Expensive
+- Most amount of soldering / Least Expensive route
+
+Minimal amount of soldering assembily option is the most expensive option cause the PCB circiut board manufacturer will be doing all the component (RGB LED, capacitors, resitors) for you under a 7 design x5 board(s). This leaves you with only having to break out each housing sides (tops, bottom, back, front, left and right), dry fitting them and soldering the large pads where each side edges meet and the arduino to the top. Apply power and away you go.
+
+Most amount of soldering is the least expensive route cause you are requesting the PCB manfacturer to not surface mount anything for you. Instead (along with blank PCBs) you are given a metal stencile that is used in conjunction with low temp solder and heat gun to surface mount self purchased components. This all before even assembiling the sides together, mounting arduino and applying power.
 
 You will need the following:
 
@@ -31,7 +42,7 @@ The open source r-series periscope PCB(s) have been designed in a online applica
 
 To being, click the following link below to open the EasyEDA PCB project:
 
-[coming soon]
+https://easyeda.com/editor#id=|f2d6e47b44a243a790c3440f8382e354|e78da6a5fc364d829aff3906f2ea11d9|08bb938e8ee346a4aacb5f3062c3c0c5|aa58631963ea423db45d047d47d0b54d|968a05f5e63642cc88bd50dabc5d8882
 
 Once open, click the "fabrication" menu and choose "One click order PCB/SMT" and choose "ok". With any luck, you should have a new browser tab open to JLCPCB manufacture and our project file(s) ready to make some choices.
 
