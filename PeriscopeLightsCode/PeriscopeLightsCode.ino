@@ -91,6 +91,11 @@ void setup() {
     // digitalWrite(i, HIGH);
   }
 
+  for (byte i = 11; i <= 13; i++) {
+    pinMode(i, OUTPUT);
+    // digitalWrite(i, HIGH);
+  }  
+
   RGBLEDS.begin();
   RGBLEDS.show();
   RGBLEDS.setBrightness(Brightness); // Set pixel brightness defined above
