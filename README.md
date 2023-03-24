@@ -27,10 +27,10 @@ However the cheaper option requires the most amount of soldering and that you ha
 -->
 
 
-## Ordering Guides
+<!---## Ordering Guides
 
-- Quick Assembly PCB Order Option (https://github.com/drolsen/r2-periscope-lighting/wiki/PCB-Ordering-(Quick-Assembly)
-<!--- Complex Assembily PCB Order Option (https://github.com/drolsen/r2-periscope-lighting/wiki/PCB-Ordering-(Complex-Assembly)) -->
+- Quick Assembly PCB Order Option (https://github.com/drolsen/r2-periscope-lighting/wiki/Ordering-PCBs)
+ Complex Assembily PCB Order Option (https://github.com/drolsen/r2-periscope-lighting/wiki/PCB-Ordering-(Complex-Assembly)) -->
 
 
 ## Guides
