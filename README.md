@@ -8,7 +8,7 @@ This open source project is a place to house all information around:
 - Uploading Code / Testing & running PCB lights
 
 ## Features
-- R2 Uppity Spinner 3 pin communication
+- [Deisgned for R2 Uppity Spinner](https://astromech.net/forums/showthread.php?42923-Uppity-Spinner-Periscope-Lifter-and-Rotary-PCB)
 - Optional RX/TX communication
 - 31x 5v WS2812B-2020 RGB LEDs
 - 8 different lighting modes
