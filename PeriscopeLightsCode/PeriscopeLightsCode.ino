@@ -561,7 +561,7 @@ void SearchLights() {
 }
 
 void DagobahLights() {
-  FrontSweepLTR(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
+  FrontSweepLRTC(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
   On(DagobahColors[1], RGBCenter);  
   On(DagobahColors[1], RGBRight);
   On(DagobahColors[1], RGBLeft);
