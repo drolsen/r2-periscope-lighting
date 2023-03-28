@@ -1,18 +1,26 @@
-///////////////////////////////////////////////////////////// 
-// R-Series Periscope Lighting Kit Sketch (Devin R. Olsen) //
-/////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//     R-Series Periscope Lighting Kit Sketch       // 
+//          (Devin R. Olsen - 3/28/2023)            //
+// https://github.com/drolsen/r2-periscope-lighting //
+//////////////////////////////////////////////////////
+
 // Configurable options
 int Brightness = 250;     // Defines the brightness of RGB leds (255 max / 200 recommended)
 byte COMTYPE = 0;         // 0 === Legacy three pin ABC communication | 1 === RX/TX serial communication (requires RX/TX pads be soldered on top PCB)
-byte MODE = 0;            // 0 == FullCycle | 1 == FullOff | 2 == ObiWanLights | 3 == YodaLights | 4 == SithLights | 5 == SearchLights | 6 == DagobahLights | 7 == SparkelLights | 8 == FullOn
+byte MODE = 1;            // 1 == FullCycle | 2 == FullOff | 3 == ObiWanLights | 4 == YodaLights | 5 == SithLights | 6 == SearchLights | 7 == DagobahLights | 8 == SparkelLights | 9 == FullOn
 
-// Mode Speeds
-int ObiwanSpeed = 150;    // Speed Obiwan lights mode
-int YodaSpeed = 250;      // Speed Yoda lights mode
-int SithSpeed = 250;      // Speed Sith lights mode
-int SearchSpeed = 45;    // Speed Search lights mode
-int DagobahSpeed = 500;  // Speed Degobah lights mode
-int SparkelSpeed = 50;    // Speed Sparkel lights mode
+// Mode Speeds (smaller numbers is faster)
+int ObiwanSpeed = 5;        // Speed Obiwan lights mode
+int YodaSpeed = 5;          // Speed Yoda lights mode
+int SithSpeed = 5;          // Speed Sith lights mode
+int SearchSpeed = 45;       // Speed Search lights mode
+int DagobahSpeed = 500;     // Speed Degobah lights mode
+int SparkelSpeed = 50;      // Speed Sparkel lights mode
+
+// Durations (smaller numbers is faster)
+int FullCycleDuration = 10000;    // Duration between each mode
+int REDFrontDuration = 900;       // Duration between each RED front LEDs lighting up
+int REDBackDuration = 1000; // Duration between random on/off states for RED back LEDs
 
 // All Colors in RGB format
 int RED[3] = {255, 0, 0};
@@ -40,6 +48,7 @@ int SparkelColors[2] =  {VIOLET, WHITE};
 #define RGBCount 31   // How many RGB LEDS on Lights
 Adafruit_NeoPixel RGBLEDS(RGBCount, RGBPin, NEO_GRB + NEO_KHZ800);
 
+byte RGBAllSides[2] = {12, 30};
 byte RGBCenter[2] = {0, 11};  // Center RGB Pixel Range
 byte RGBLeft[2] = {12, 17};   // Left RGB Pixel Range
 byte RGBFront[2] = {18, 24};  // Front RGB Pixel Range
@@ -50,6 +59,7 @@ byte REDBack[2] = {11, 13};   // Back RED LED Range
 byte REDFront[2] = {2, 7};    // Front RED LED Range
 
 // COM PINS
+byte MODETEST;
 #define COM0 8
 #define COM1 9
 #define COM2 10
@@ -70,7 +80,7 @@ byte CenterLEDSCurrent = RGBCenter[0];
 byte LeftLEDSCurrent = RGBLeft[0];
 byte FrontTopLEDSCurrent = RGBFront[0];
 byte RightLEDSCurrent = RGBRight[0];
-byte FullCycleCurrent = 2;
+byte FullCycleCurrent = 3;
 
 byte CenterDirection = 1;       // 0 = move up / 1 = move down
 byte LeftDirection = 1;         // 0 = move up / 1 = move down
@@ -78,8 +88,16 @@ byte FrontTopDirection = 1;     // 0 = move up / 1 = move down
 byte RightDirection = 1;        // 0 = move up / 1 = move down
 byte REDFrontDirection = 1;     // 0 = move left / 1 = move right
 
+int FrontRGBState[3] = {0, 0, 0};
+int LeftRGBState[3] = {0, 0, 0};
+int RightRGBState[3] = {0, 0, 0};
+int CenterRGBState[3] = {0, 0, 0};
+
 void setup() {
-  Serial.begin(9600);
+  if (COMTYPE == 1) {
+    Serial.begin(9600);
+    Serial.setTimeout(50);
+  }
   
   // A, B, C three pin communication    
   pinMode(COM0, INPUT_PULLUP);
@@ -103,74 +121,75 @@ void setup() {
 
 void loop() {
   COMCheck();
-  
+
   // Full Cycle
-  if (MODE == 0) { FullCycle(); }
+  if (MODE == 1) { FullCycle(); }
   
   // Full Off
-  if (MODE == 1) { Off(); }
+  if (MODE == 2) { Off(); }
 
   // Obi Wan Lights
-  if (MODE == 2) { ObiWanLights(); }
+  if (MODE == 3) { ObiWanLights(); }
 
   // Yoda Lights
-  if (MODE == 3) { YodaLights(); }
+  if (MODE == 4) { YodaLights(); }
 
   // Sith Lights
-  if (MODE == 4) { SithLights(); }
+  if (MODE == 5) { SithLights(); }
 
    // Search Light
-  if (MODE == 5) { SearchLights(); }
+  if (MODE == 6) { SearchLights(); }
 
   // Dagobah Lights
-  if (MODE == 6) { DagobahLights(); } 
+  if (MODE == 7) { DagobahLights(); } 
 
   // Lights Sparkel
-  if (MODE == 7) { SparkelLights(); }
+  if (MODE == 8) { SparkelLights(); }
 
-  // Debug
-  if (MODE == 8) { DebugLights(); }
+  // Debug (all on)
+  if (MODE == 9) { DebugLights(); }
 }
 
 
 ////////////////////
 // HELPER METHODS //
 ////////////////////
-
 // Checks COM for different light modes
 void COMCheck() {
   ///////////////////////////
   // ABC Pin COMMUNICATION //
   ///////////////////////////
-  char COMBOS[8][3] = {
-    {HIGH, HIGH, HIGH},   // Full Cycle
-    {HIGH, HIGH, LOW},    // Full Off
-    {HIGH, LOW, HIGH},    // Obi Wan Lights
-    {HIGH, LOW, LOW},     // Yoda Lights
-    {LOW, HIGH, HIGH},    // Sith Lights
-    {LOW, HIGH, LOW},     // Search Light
-    {LOW, LOW, HIGH},     // Dagobah Lights
-    {LOW, LOW, LOW}       // Lights Sparkel
+  int COMBOS[8][3] = {
+    {1, 1, 1},   // Full Cycle
+    {1, 1, 0},   // Full Off
+    {1, 0, 1},   // Obi Wan Lights
+    {1, 0, 0},   // Yoda Lights
+    {0, 1, 1},   // Sith Lights
+    {0, 1, 0},   // Search Light
+    {0, 0, 1},   // Dagobah Lights
+    {0, 0, 0}    // Lights Sparkel
   };
   
   if (COMTYPE == 0) {
     // Find a match in our COMBOS array
-    for (byte i = 0; i < 7; i++) {
+    for (byte i = 0; i <= 7; i++) {
       if (
-        COM0 == COMBOS[i][0] 
-        && COM1 == COMBOS[i][1] 
-        && COM2 == COMBOS[i][2]
+        digitalRead(COM0) == COMBOS[i][0] 
+        && digitalRead(COM1) == COMBOS[i][1] 
+        && digitalRead(COM2) == COMBOS[i][2]
       ) {
-        MODE = i;
+        MODE = (i+1); // Cause mode is not zero based
       }
     }
   } else {
-    
-  //////////////////////////////////////
-  // Alternative RX/TX COMMUNICATION  //
-  //////////////////////////////////////
-    if (Serial.available() > 0) {
-      MODE = Serial.parseInt();
+    //////////////////////////////////////
+    // Alternative RX/TX COMMUNICATION  //
+    //////////////////////////////////////
+    if (Serial.available()) {
+      MODETEST = Serial.parseInt();                    //Read user input and hold it in a variable
+      if (MODETEST > 0) {
+        MODE = MODETEST;
+      }
     }
   }
 }
@@ -216,23 +235,27 @@ void Clear(byte side[2], int bgColor[3], bool isDigital) {
 ///////////////////////
 
 // On / Off
-void On(int rgb[3], byte pixelRange[2]){
-  for (byte i = pixelRange[0]; i <= pixelRange[1]; i++){
-    RGBLEDS.setPixelColor(i, RGBLEDS.Color(rgb[0], rgb[1], rgb[2]));    
+void On(int rgb[3], byte side[2]){
+  if (rgb != NULL) {
+    for (byte i = side[0]; i <= side[1]; i++){
+      RGBLEDS.setPixelColor(i, RGBLEDS.Color(rgb[0], rgb[1], rgb[2]));    
+    }
+    RGBLEDS.show();
+  } else {
+    for (byte i = side[0]; i <= side[1]; i++){
+      digitalWrite(i, HIGH);    
+    }    
   }
-  RGBLEDS.show();
 }
 
 void Off() {
-  RGBLEDS.clear();
+  for (byte i = 0; i <= RGBCount; i++) {
+    RGBLEDS.setPixelColor(i, RGBLEDS.Color(0, 0, 0));   
+  }
+  RGBLEDS.show();
+  
   Clear(REDFront, NULL, true);
   Clear(REDBack, NULL, true); 
-}
-
-void FrontBottom__On(){
-  for (byte i = 2; i <= 7; i++){
-    digitalWrite(i, HIGH);   
-  }
 }
 
 // Sweeps 
@@ -297,7 +320,8 @@ void FullSweep(int rgb[3], int bgColor[3], int delay, unsigned long& wait) {
   }
 }
 
-void FrontSweep(int rgb[3], int delay, unsigned long& wait) {
+// Left to right sweeps
+void FrontSweepLTR(int rgb[3], int delay, unsigned long& wait) {
   if (millis() > (wait + delay)) {
     // Change Direction
     if (FrontTopDirection == 1) {
@@ -318,7 +342,7 @@ void FrontSweep(int rgb[3], int delay, unsigned long& wait) {
   }
 }
 
-void REDFrontSweep() {
+void REDFrontSweepLTR() {
   if (millis() > (REDFrontWait + 500)) {
     // First turn off all front LEDS
     Clear(REDFront, NULL, true);
@@ -336,6 +360,36 @@ void REDFrontSweep() {
 
     // Reset timestamp checking
     REDFrontWait = millis();
+  }
+}
+
+// Left & Right to Center sweeps
+void FrontSweepLRTC(int rgb[3], int delay, unsigned long& wait) {
+  if (millis() > (wait + delay)) {
+    // Change Direction
+    byte SweepSequence[4][2] = {
+      {18, 24},
+      {19, 23},
+      {20, 22},
+      {21, 21}
+    };
+    
+    if (FrontTopDirection == 1) {
+      FrontTopLEDSCurrent++;
+      if (FrontTopLEDSCurrent == 3) { FrontTopDirection = 0; }    
+    } else {
+      FrontTopLEDSCurrent--; 
+      if (FrontTopLEDSCurrent == 0) { FrontTopDirection = 1; }    
+    }    
+    
+    // First turn off all front LEDS
+    Clear(RGBFront, NULL, false);
+    RGBLEDS.setPixelColor(SweepSequence[FrontTopLEDSCurrent][0], RGBLEDS.Color(rgb[0], rgb[1], rgb[2]));
+    RGBLEDS.setPixelColor(SweepSequence[FrontTopLEDSCurrent][1], RGBLEDS.Color(rgb[0], rgb[1], rgb[2]));
+    
+    // Reset timestamp checking
+    RGBLEDS.show();
+    wait = millis();
   }
 }
 
@@ -375,19 +429,9 @@ void Random(int rgb[3], int background[3], byte side[2], int delay, unsigned lon
   }
 }
 
-void REDFrontRandom() {
-  if (millis() >= (REDFrontWait + 500)) {
-    Clear(REDFront, NULL, true);
-    REDFrontCurrent = random(1, 6);
-    digitalWrite(REDFront[REDFrontCurrent], HIGH);
-
-    REDFrontWait = millis();
-  }
-}
-
 void REDBackRandom() {
-  if (millis() > (REDBackWait + 2000)) {
-    //Clear(BackMinMax, NULL, true);
+  if (millis() > (REDBackWait + REDBackDuration)) {
+    Clear(REDBack, NULL, true);
     REDBackCurrent = random(11, 14);
     digitalWrite(REDBackCurrent, HIGH);
 
@@ -395,138 +439,106 @@ void REDBackRandom() {
   }  
 }
 
-// Flashes
-void Flash(int rgb[3], byte side[2], unsigned long& speed, byte& direction) {
-  if (millis() >= speed) {
-    if (direction == 0) {
-      for (byte i = side[0]; i < side[1]; i++) {
-        RGBLEDS.setPixelColor(
-          i, 
-          RGBLEDS.Color(
-            rgb[0], 
-            rgb[1], 
-            rgb[2]
-          )
-        );
-      }
-      direction = 1;
-    } else {
-      for (byte i = side[0]; i < side[1]; i++) {
-        RGBLEDS.setPixelColor(
-          i, 
-          RGBLEDS.Color(
-            rgb[0], 
-            rgb[0], 
-            rgb[0]
-          )
-        );
-      }
-      direction = 0;
-    }
-
-    speed = millis(); // reset delay wait (aka delay speed relative to clock)
-    RGBLEDS.show();
-  }
-}
-
 // Fades
-void Fade(int rgb[3], byte side[2], byte& direction, int delay, unsigned long& wait) {
+void Fade(int rgb[3], int rgbState[3], byte side[2], byte& direction, int delay, unsigned long& wait) {
   if (millis() > (wait + delay)) {
-    direction = (direction != 1) ? 1 : 0;
-    uint8_t r = (RGBLEDS.getPixelColor(side[0]) >> 16);
-    uint8_t g = (RGBLEDS.getPixelColor(side[0]) >> 8);
-    uint8_t b = RGBLEDS.getPixelColor(side[0]);
+    if (rgbState[0] > rgb[0]) { rgbState[0] = 0; }
+    if (rgbState[1] > rgb[1]) { rgbState[1] = 0; }
+    if (rgbState[2] > rgb[2]) { rgbState[2] = 0; }
 
-    for (int i = 0; i <= 255; i++) {
-      if (direction == 0) {
-        if (r > 0) { r--; }
-        if (g > 0) { g--; }
-        if (b > 0) { b--; }
-        
-        if (r == 0 && g == 0 && b == 0) {i = 255; } 
+    if (direction == 0) {
+      if (rgbState[0] > 0) { rgbState[0]--; }
+      if (rgbState[1] > 0) { rgbState[1]--; }
+      if (rgbState[2] > 0) { rgbState[2]--; }
+  
+      if (
+        rgbState[0] == 0 
+        && rgbState[1] == 0 
+        && rgbState[2] == 0
+      ) {
+        direction = 1;
       }
-
-      if (direction == 1) {
-        if (r < rgb[0]) { r++;}
-        if (g < rgb[1]) { g++; }
-        if (b < rgb[2]) { b++; }
-
-        if (r == rgb[0] && g == rgb[1] && b == rgb[2]) {i = 255; } 
-      }
-
-      RGBLEDS.fill(RGBLEDS.Color(r, g, b), side[0], ((side[1] - side[0]) + 1));
-      RGBLEDS.show();        
     }
-    
-    delay = millis();
+
+    if (direction == 1) {
+      if (rgbState[0] < rgb[0]) { rgbState[0]++; }
+      if (rgbState[1] < rgb[1]) { rgbState[1]++; }
+      if (rgbState[2] < rgb[2]) { rgbState[2]++; }
+  
+      if (
+        rgbState[0] == rgb[0] 
+        && rgbState[1] == rgb[1] 
+        && rgbState[2] == rgb[2]
+      ) {
+        direction = 0;
+      }
+    }
+
+    RGBLEDS.fill(RGBLEDS.Color(rgbState[0], rgbState[1], rgbState[2]), side[0], ((side[1] - side[0]) + 1));
+    RGBLEDS.show(); 
+    wait = millis();
   }
 }
 
 ////////////////////
 // MODE SEQUENCES //
 ////////////////////
-
 void FullCycle() {
-  if (millis() > (FullCycleWait + 5000)) {
+  if (millis() > (FullCycleWait + FullCycleDuration)) {
     FullCycleCurrent++;
     
-    if (FullCycleCurrent > 6) {
-      FullCycleCurrent = 2;
-    }
+    if (FullCycleCurrent > 8) { FullCycleCurrent = 3; }
     
     FullCycleWait = millis();
   }
 
-  if (FullCycleCurrent == 2) { YodaLights(); }
-  if (FullCycleCurrent == 3) { SithLights(); }
-  if (FullCycleCurrent == 4) { SearchLights(); }
-  if (FullCycleCurrent == 5) { DagobahLights(); }
-  if (FullCycleCurrent == 6) { SparkelLights(); }  
+  if (FullCycleCurrent == 3) { ObiWanLights(); }
+  if (FullCycleCurrent == 4) { YodaLights(); }
+  if (FullCycleCurrent == 5) { SithLights(); }
+  if (FullCycleCurrent == 6) { SearchLights(); }
+  if (FullCycleCurrent == 7) { DagobahLights(); }
+  if (FullCycleCurrent == 8) { SparkelLights(); }
 }
 
 void ObiWanLights() {
-  Fade(ObiwanColors[0], RGBFront, FrontTopDirection, ObiwanSpeed, FrontWait);
   On(BLUE, RGBRight);
-  On(BLUE, RGBLeft);
-  Random(ObiwanColors[1], ObiwanColors[0], RGBCenter, ObiwanSpeed, CenterWait);
-
-  REDFrontSweep();
+  On(BLUE, RGBLeft);   
+  Fade(ObiwanColors[0], FrontRGBState, RGBFront, FrontTopDirection, ObiwanSpeed, FrontWait);
+  REDFrontSweepLTR();
   REDBackRandom();
+  Random(ObiwanColors[1], ObiwanColors[0], RGBCenter, (ObiwanSpeed * 25), CenterWait);
 }
 
 void YodaLights() {
-  Random(YodaColors[0], YodaColors[1], RGBCenter, YodaSpeed, CenterWait);
-  Fade(YodaColors[0], RGBLeft, LeftDirection, YodaSpeed, LeftWait);
-  Fade(YodaColors[0], RGBRight, RightDirection, YodaSpeed, RightWait);
-  Fade(YodaColors[0], RGBFront, FrontTopDirection, YodaSpeed, FrontWait);
-
-  REDFrontSweep();
+  Fade(YodaColors[0], LeftRGBState, RGBLeft, LeftDirection, YodaSpeed, LeftWait);
+  Fade(YodaColors[0], RightRGBState, RGBRight, RightDirection, YodaSpeed+1, RightWait);
+  Fade(YodaColors[0], FrontRGBState, RGBFront, FrontTopDirection, YodaSpeed+2, FrontWait);
+  REDFrontSweepLTR();
   REDBackRandom();
+  Random(YodaColors[0], YodaColors[1], RGBCenter, (YodaSpeed * 20), CenterWait);
 }
 
 void SithLights() {
-  Fade(SithColors[0], RGBFront, FrontTopDirection, SithSpeed, FrontWait);
-  Fade(SithColors[0], RGBLeft, LeftDirection, SithSpeed, LeftWait);
-  Fade(SithColors[0], RGBRight, RightDirection, SithSpeed, RightWait);
-  Random(SithColors[0], SithColors[1], RGBCenter, (SithSpeed * 2), CenterWait);
-  
-  REDFrontSweep();
+  Fade(SithColors[0], LeftRGBState, RGBLeft, LeftDirection, SithSpeed, LeftWait);
+  Fade(SithColors[0], RightRGBState, RGBRight, RightDirection, SithSpeed+2, RightWait);
+  Fade(SithColors[0], FrontRGBState, RGBFront, FrontTopDirection, SithSpeed+3, FrontWait);
+  REDFrontSweepLTR();
   REDBackRandom();
+  Random(SithColors[0], SithColors[1], RGBCenter, (SithSpeed * 51), CenterWait);
 }
 
 void SearchLights() {
   FullSweep(SearchColors[0], SearchColors[1], SearchSpeed, CenterWait);
-  REDFrontSweep();
+  REDFrontSweepLTR();
   REDBackRandom();  
 }
 
 void DagobahLights() {
-  FrontSweep(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
+  FrontSweepLTR(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
   On(DagobahColors[1], RGBCenter);  
   On(DagobahColors[1], RGBRight);
   On(DagobahColors[1], RGBLeft);
-   
-  FrontBottom__On();
+  On(NULL, REDFront);
   REDBackRandom();
 }
 
@@ -535,7 +547,6 @@ void SparkelLights() {
   Random(SparkelColors[0], NULL, RGBLeft, SparkelSpeed, LeftWait);
   Random(SparkelColors[0], NULL, RGBRight, SparkelSpeed, RightWait);
   Random(SparkelColors[0], NULL, RGBFront, SparkelSpeed, FrontWait);
-  
-  REDFrontSweep();
+  REDFrontSweepLTR();
   REDBackRandom();
 }
