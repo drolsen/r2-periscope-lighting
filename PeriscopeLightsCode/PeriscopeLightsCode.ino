@@ -7,7 +7,7 @@
 // Configurable options
 int Brightness = 250;     // Defines the brightness of RGB leds (255 max / 200 recommended)
 byte COMTYPE = 0;         // 0 === Legacy three pin ABC communication | 1 === RX/TX serial communication (requires RX/TX pads be soldered on top PCB)
-byte MODE = 1;            // 1 == FullCycle | 2 == FullOff | 3 == ObiWanLights | 4 == YodaLights | 5 == SithLights | 6 == SearchLights | 7 == DagobahLights | 8 == SparkelLights | 9 == FullOn
+byte MODE = 3;            // 1 == FullCycle | 2 == FullOff | 3 == ObiWanLights | 4 == YodaLights | 5 == SithLights | 6 == SearchLights | 7 == DagobahLights | 8 == SparkelLights | 9 == FullOn | 10 = COM Debug
 
 // Mode Speeds (smaller numbers is faster)
 int ObiwanSpeed = 5;        // Speed Obiwan lights mode
@@ -120,7 +120,8 @@ void setup() {
 }
 
 void loop() {
-  COMCheck();
+  // COMs Checking
+  if (MODE != 10) { COMCheck(); }
 
   // Full Cycle
   if (MODE == 1) { FullCycle(); }
@@ -146,8 +147,11 @@ void loop() {
   // Lights Sparkel
   if (MODE == 8) { SparkelLights(); }
 
-  // Debug (all on)
+  // Debug LEDS (used to debug if all leds light up)
   if (MODE == 9) { DebugLights(); }
+
+  // Debug COMS (used to identify HIGH or LOW states of ABC pins)
+  if (MODE == 10) { DebugComs(); }    
 }
 
 
@@ -213,6 +217,29 @@ void DebugLights() {
   for (byte i = REDFront[0]; i <= REDFront[1]; i++) {
     digitalWrite(i, HIGH);
   }
+}
+
+// Debug COMs (ABC Pin debuging)
+void DebugComs(){
+  if (digitalRead(COM0) == 1) {
+    RGBLEDS.fill(RGBLEDS.Color(255, 255, 255), RGBRight[0], ((RGBRight[1] - RGBRight[0]) + 1));
+  } else {
+    RGBLEDS.fill(RGBLEDS.Color(0, 0, 0), RGBRight[0], ((RGBRight[1] - RGBRight[0]) + 1));
+  }
+
+  if (digitalRead(COM1) == 1) {
+    RGBLEDS.fill(RGBLEDS.Color(255, 255, 255), RGBCenter[0], ((RGBCenter[1] - RGBCenter[0]) + 1));
+  } else {
+    RGBLEDS.fill(RGBLEDS.Color(0, 0, 0), RGBCenter[0], ((RGBCenter[1] - RGBCenter[0]) + 1));
+  }
+
+  if (digitalRead(COM2) == 1) {
+    RGBLEDS.fill(RGBLEDS.Color(255, 255, 255), RGBLeft[0], ((RGBLeft[1] - RGBLeft[0]) + 1));
+  } else {
+    RGBLEDS.fill(RGBLEDS.Color(0, 0, 0), RGBLeft[0], ((RGBLeft[1] - RGBLeft[0]) + 1));
+  }
+
+  RGBLEDS.show();   
 }
 
 // Clearing LEDs
@@ -534,7 +561,7 @@ void SearchLights() {
 }
 
 void DagobahLights() {
-  FrontSweepLTR(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
+  FrontSweepLRTC(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
   On(DagobahColors[1], RGBCenter);  
   On(DagobahColors[1], RGBRight);
   On(DagobahColors[1], RGBLeft);
