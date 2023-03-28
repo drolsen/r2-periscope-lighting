@@ -1,13 +1,10 @@
-//////////////////////////////////////////////////////
-//     R-Series Periscope Lighting Kit Sketch       // 
-//          (Devin R. Olsen - 3/28/2023)            //
-// https://github.com/drolsen/r2-periscope-lighting //
-//////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////// 
+// R-Series Periscope Lighting Kit Sketch (Devin R. Olsen) //
+/////////////////////////////////////////////////////////////
 // Configurable options
 int Brightness = 250;     // Defines the brightness of RGB leds (255 max / 200 recommended)
 byte COMTYPE = 0;         // 0 === Legacy three pin ABC communication | 1 === RX/TX serial communication (requires RX/TX pads be soldered on top PCB)
-byte MODE = 1;            // 1 == FullCycle | 2 == FullOff | 3 == ObiWanLights | 4 == YodaLights | 5 == SithLights | 6 == SearchLights | 7 == DagobahLights | 8 == SparkelLights | 9 == FullOn
+byte MODE = 3;            // 1 == FullCycle | 2 == FullOff | 3 == ObiWanLights | 4 == YodaLights | 5 == SithLights | 6 == SearchLights | 7 == DagobahLights | 8 == SparkelLights | 9 == FullOn | 10 == COM Debug
 
 // Mode Speeds (smaller numbers is faster)
 int ObiwanSpeed = 5;        // Speed Obiwan lights mode
@@ -20,7 +17,7 @@ int SparkelSpeed = 50;      // Speed Sparkel lights mode
 // Durations (smaller numbers is faster)
 int FullCycleDuration = 10000;    // Duration between each mode
 int REDFrontDuration = 900;       // Duration between each RED front LEDs lighting up
-int REDBackDuration = 1000; // Duration between random on/off states for RED back LEDs
+int REDBackRandomDuration = 1000; // Duration between random on/off states for RED back LEDs
 
 // All Colors in RGB format
 int RED[3] = {255, 0, 0};
@@ -120,7 +117,8 @@ void setup() {
 }
 
 void loop() {
-  COMCheck();
+  // COMs Checking
+  if (MODE != 10) { COMCheck(); }
 
   // Full Cycle
   if (MODE == 1) { FullCycle(); }
@@ -146,8 +144,11 @@ void loop() {
   // Lights Sparkel
   if (MODE == 8) { SparkelLights(); }
 
-  // Debug (all on)
+  // Debug LEDS (used to debug if all leds light up)
   if (MODE == 9) { DebugLights(); }
+
+  // Debug COMS (used to identify HIGH or LOW states of ABC pins)
+  if (MODE == 10) { DebugComs(); }  
 }
 
 
@@ -215,6 +216,29 @@ void DebugLights() {
   }
 }
 
+// Debug COMs (ABC Pin debuging)
+void DebugComs(){
+  if (digitalRead(COM0) == 1) {
+    RGBLEDS.fill(RGBLEDS.Color(255, 255, 255), RGBRight[0], ((RGBRight[1] - RGBRight[0]) + 1));
+  } else {
+    RGBLEDS.fill(RGBLEDS.Color(0, 0, 0), RGBRight[0], ((RGBRight[1] - RGBRight[0]) + 1));
+  }
+  
+  if (digitalRead(COM1) == 1) {
+    RGBLEDS.fill(RGBLEDS.Color(255, 255, 255), RGBCenter[0], ((RGBCenter[1] - RGBCenter[0]) + 1));
+  } else {
+    RGBLEDS.fill(RGBLEDS.Color(0, 0, 0), RGBCenter[0], ((RGBCenter[1] - RGBCenter[0]) + 1));
+  }
+  
+  if (digitalRead(COM2) == 1) {
+    RGBLEDS.fill(RGBLEDS.Color(255, 255, 255), RGBLeft[0], ((RGBLeft[1] - RGBLeft[0]) + 1));
+  } else {
+    RGBLEDS.fill(RGBLEDS.Color(0, 0, 0), RGBLeft[0], ((RGBLeft[1] - RGBLeft[0]) + 1));
+  }
+
+  RGBLEDS.show();   
+}
+
 // Clearing LEDs
 void Clear(byte side[2], int bgColor[3], bool isDigital) {
   if (isDigital) {
@@ -235,17 +259,11 @@ void Clear(byte side[2], int bgColor[3], bool isDigital) {
 ///////////////////////
 
 // On / Off
-void On(int rgb[3], byte side[2]){
-  if (rgb != NULL) {
-    for (byte i = side[0]; i <= side[1]; i++){
-      RGBLEDS.setPixelColor(i, RGBLEDS.Color(rgb[0], rgb[1], rgb[2]));    
-    }
-    RGBLEDS.show();
-  } else {
-    for (byte i = side[0]; i <= side[1]; i++){
-      digitalWrite(i, HIGH);    
-    }    
+void On(int rgb[3], byte pixelRange[2]){
+  for (byte i = pixelRange[0]; i <= pixelRange[1]; i++){
+    RGBLEDS.setPixelColor(i, RGBLEDS.Color(rgb[0], rgb[1], rgb[2]));    
   }
+  RGBLEDS.show();
 }
 
 void Off() {
@@ -256,6 +274,12 @@ void Off() {
   
   Clear(REDFront, NULL, true);
   Clear(REDBack, NULL, true); 
+}
+
+void FrontBottom__On(){
+  for (byte i = 2; i <= 7; i++){
+    digitalWrite(i, HIGH);   
+  }
 }
 
 // Sweeps 
@@ -320,7 +344,7 @@ void FullSweep(int rgb[3], int bgColor[3], int delay, unsigned long& wait) {
   }
 }
 
-// Left to right sweeps
+// Left to right sweepS
 void FrontSweepLTR(int rgb[3], int delay, unsigned long& wait) {
   if (millis() > (wait + delay)) {
     // Change Direction
@@ -429,8 +453,18 @@ void Random(int rgb[3], int background[3], byte side[2], int delay, unsigned lon
   }
 }
 
+void REDFrontRandom() {
+  if (millis() >= (REDFrontWait + REDFrontDuration)) {
+    Clear(REDFront, NULL, true);
+    REDFrontCurrent = random(1, 6);
+    digitalWrite(REDFront[REDFrontCurrent], HIGH);
+
+    REDFrontWait = millis();
+  }
+}
+
 void REDBackRandom() {
-  if (millis() > (REDBackWait + REDBackDuration)) {
+  if (millis() > (REDBackWait + REDBackRandomDuration)) {
     Clear(REDBack, NULL, true);
     REDBackCurrent = random(11, 14);
     digitalWrite(REDBackCurrent, HIGH);
@@ -487,7 +521,9 @@ void FullCycle() {
   if (millis() > (FullCycleWait + FullCycleDuration)) {
     FullCycleCurrent++;
     
-    if (FullCycleCurrent > 8) { FullCycleCurrent = 3; }
+    if (FullCycleCurrent >= 8) {
+      FullCycleCurrent = 3;
+    }
     
     FullCycleWait = millis();
   }
@@ -501,9 +537,11 @@ void FullCycle() {
 }
 
 void ObiWanLights() {
-  On(BLUE, RGBRight);
-  On(BLUE, RGBLeft);   
   Fade(ObiwanColors[0], FrontRGBState, RGBFront, FrontTopDirection, ObiwanSpeed, FrontWait);
+  On(BLUE, RGBRight);
+  On(BLUE, RGBLeft); 
+
+
   REDFrontSweepLTR();
   REDBackRandom();
   Random(ObiwanColors[1], ObiwanColors[0], RGBCenter, (ObiwanSpeed * 25), CenterWait);
@@ -513,6 +551,7 @@ void YodaLights() {
   Fade(YodaColors[0], LeftRGBState, RGBLeft, LeftDirection, YodaSpeed, LeftWait);
   Fade(YodaColors[0], RightRGBState, RGBRight, RightDirection, YodaSpeed+1, RightWait);
   Fade(YodaColors[0], FrontRGBState, RGBFront, FrontTopDirection, YodaSpeed+2, FrontWait);
+
   REDFrontSweepLTR();
   REDBackRandom();
   Random(YodaColors[0], YodaColors[1], RGBCenter, (YodaSpeed * 20), CenterWait);
@@ -522,6 +561,7 @@ void SithLights() {
   Fade(SithColors[0], LeftRGBState, RGBLeft, LeftDirection, SithSpeed, LeftWait);
   Fade(SithColors[0], RightRGBState, RGBRight, RightDirection, SithSpeed+2, RightWait);
   Fade(SithColors[0], FrontRGBState, RGBFront, FrontTopDirection, SithSpeed+3, FrontWait);
+
   REDFrontSweepLTR();
   REDBackRandom();
   Random(SithColors[0], SithColors[1], RGBCenter, (SithSpeed * 51), CenterWait);
@@ -534,11 +574,12 @@ void SearchLights() {
 }
 
 void DagobahLights() {
-  FrontSweepLTR(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
   On(DagobahColors[1], RGBCenter);  
   On(DagobahColors[1], RGBRight);
   On(DagobahColors[1], RGBLeft);
-  On(NULL, REDFront);
+
+  FrontSweepLRTC(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
+  FrontBottom__On();
   REDBackRandom();
 }
 
@@ -547,6 +588,7 @@ void SparkelLights() {
   Random(SparkelColors[0], NULL, RGBLeft, SparkelSpeed, LeftWait);
   Random(SparkelColors[0], NULL, RGBRight, SparkelSpeed, RightWait);
   Random(SparkelColors[0], NULL, RGBFront, SparkelSpeed, FrontWait);
+  
   REDFrontSweepLTR();
   REDBackRandom();
 }
