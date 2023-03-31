@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////
 //     R-Series Periscope Lighting Kit Sketch       // 
-//          (Devin R. Olsen - 3/28/2023)            //
+//          (Devin R. Olsen - 3/31/2023)            //
 // https://github.com/drolsen/r2-periscope-lighting //
 //////////////////////////////////////////////////////
 
 // Configurable options
-int Brightness = 250;     // Defines the brightness of RGB leds (255 max / 200 recommended)
+int BRIGHTNESS = 250;     // Defines the brightness of RGB leds (255 max / 200 recommended)
 byte COMTYPE = 0;         // 0 === Legacy three pin ABC communication | 1 === RX/TX serial communication (requires RX/TX pads be soldered on top PCB)
-byte MODE = 3;            // 1 == FullCycle | 2 == FullOff | 3 == ObiWanLights | 4 == YodaLights | 5 == SithLights | 6 == SearchLights | 7 == DagobahLights | 8 == SparkelLights | 9 == FullOn | 10 = COM Debug
+byte MODE = 1;            // 1 == FullCycle | 2 == FullOff | 3 == ObiWanLights | 4 == YodaLights | 5 == SithLights | 6 == SearchLights | 7 == DagobahLights | 8 == SparkelLights | 9 == FullOn | 10 = COM Debug
 
 // Mode Speeds (smaller numbers is faster)
 int ObiwanSpeed = 5;        // Speed Obiwan lights mode
@@ -116,7 +116,7 @@ void setup() {
 
   RGBLEDS.begin();
   RGBLEDS.show();
-  RGBLEDS.setBrightness(Brightness); // Set pixel brightness defined above
+  RGBLEDS.setBrightness(BRIGHTNESS); // Set pixel brightness defined above
 }
 
 void loop() {
@@ -190,10 +190,25 @@ void COMCheck() {
     // Alternative RX/TX COMMUNICATION  //
     //////////////////////////////////////
     if (Serial.available()) {
-      MODETEST = Serial.parseInt();                    //Read user input and hold it in a variable
-      if (MODETEST > 0) {
-        MODE = MODETEST;
-      }
+      // Listening variable
+      String command = Serial.readStringUntil('\n'); 
+
+      if ((sizeof(command)-1) > 0) {
+        // Qualifiers
+        String commands[9] = {
+          ":PL1", ":PL2", ":PL3", 
+          ":PL4", ":PL5", ":PL6", 
+          ":PL7", ":PL8", ":PL9"
+        };
+        
+        // Checking
+        for (int i = 1; i <= 9; i++) {
+          if (command.equals(commands[i - 1])) {
+            MODE = i;
+            break; // lets stop seeking
+          }
+        } 
+      }     
     }
   }
 }
@@ -561,7 +576,7 @@ void SearchLights() {
 }
 
 void DagobahLights() {
-  FrontSweepLRTC(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
+  FrontSweepLTR(DagobahColors[0], DagobahSpeed, FrontWait); // Sweeps a violet light across top lights at an interval of 1 second
   On(DagobahColors[1], RGBCenter);  
   On(DagobahColors[1], RGBRight);
   On(DagobahColors[1], RGBLeft);
