@@ -6,7 +6,7 @@
 
 // Configurable options
 int BRIGHTNESS = 250;     // Defines the brightness of RGB leds (255 max / 200 recommended)
-byte COMTYPE = 1;         // 0 === Legacy three pin ABC communication | 1 === RX/TX serial communication (requires RX/TX pads be soldered on top PCB)
+byte COMTYPE = 0;         // 0 === Legacy three pin ABC communication | 1 === RX/TX serial communication (requires RX/TX pads be soldered on top PCB)
 byte MODE = 1;            // 1 == FullCycle | 2 == FullOff | 3 == ObiWanLights | 4 == YodaLights | 5 == SithLights | 6 == SearchLights | 7 == DagobahLights | 8 == SparkelLights | 9 == FullOn | 10 = COM Debug
 
 // Mode Speeds (smaller numbers is faster)
@@ -19,7 +19,7 @@ int SparkelSpeed = 50;      // Speed Sparkel lights mode
 
 // Durations (smaller numbers is faster)
 int FullCycleDuration = 10000;    // Duration between each mode
-int REDFrontDuration = 2000;       // Duration between each RED front LEDs lighting up
+int REDFrontDuration = 900;       // Duration between each RED front LEDs lighting up
 int REDBackDuration = 1000; // Duration between random on/off states for RED back LEDs
 
 // All Colors in RGB format
@@ -387,7 +387,7 @@ void FrontSweepLTR(int rgb[3], int delay, unsigned long& wait) {
 void REDFrontSweepLTR() {
   if (millis() > (REDFrontWait + REDFrontDuration)) {
 
-    byte sequence[6] = {4, 3, 2, 5, 6, 7};
+    byte sequence[6] = { 4, 3, 2, 5, 6, 7 };
     // First turn off all front LEDS
     Clear(REDFront, NULL, true);
         
